@@ -1,0 +1,34 @@
+#!/bin/bash
+if [ $# -lt 2 ]
+then	
+	echo "./compile -v filename for valgrind"
+	echo "./compile -x filename to compile and execute"
+	echo "./compile -c filename to compile"
+	echo "FILENAME WITHOUT EXTENSION"
+else
+
+
+while getopts "vxc" OPTION
+do
+	case $OPTION in
+		v)
+			gcc "$2".c -Wall -o "$2"
+			chmod +x "$2"
+			valgrind "$2"
+			exit
+			;;
+		x)
+			gcc "$2".c -Wall -o "$2"
+			chmod +x "$2"
+			./"$2"
+			exit
+			;;
+		c) 	
+			gcc "$2".c -Wall -o "$2"
+			chmod +x "$2"
+			exit
+			;;
+	esac
+done
+
+fi
