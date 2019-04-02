@@ -18,7 +18,9 @@ int is_regular_file(const char *path)
 
 int main( int argc, const char* argv[] ){
 	
-	int sent = 0;
+	int sent = 1;
+	int recieved = 0;
+
 
 	/*
 	for(int i = 0; i<argc ; i++){
@@ -32,14 +34,14 @@ int main( int argc, const char* argv[] ){
 
 	}*/
 	
-	char buffer[80];
+	char buffer[256];
 
 
-	int filePipe[2],hashPipe[2], requestPipe[2];
+	int filePipe[2],hashPipe[2];
 
 	pipe(filePipe);
 	pipe(hashPipe);
-	pipe(requestPipe);
+
 
 	int child_pid;
 
@@ -57,28 +59,37 @@ int main( int argc, const char* argv[] ){
 
 		execl("esclavo", "esclavo", (char *) NULL);
 	}
+
 	else{
 		close(hashPipe[1]);
 		close(filePipe[0]);
 		
 
 		while(sent < argc){
-			//write(filePipe[1],"HOLA\0",5);
-			//fprintf(filePipe[1], "HOLA");
-			write(filePipe[1],argv[sent],80);
+			printf("%s\n",argv[sent] );
+			write(filePipe[1],argv[sent],256);
 			sent++;
 		}
+		//char * end = "TERMINE\0";
 
-		int recieved = 0;
+		//write(filePipe[1],end ,256);
+		//write(filePipe[1], "FINDELINPUT\0",256);
+		//close(filePipe[1]);
 
-		while(recieved < sent){
-			// /printf("HOLA\n");
-			read(hashPipe[0], buffer, 80);
-			//printf("HOLAA\n");
+
+		
+
+
+		while(recieved<sent-1){
+			read(hashPipe[0], buffer, 256);
 			printf("%s\n",buffer );
-			recieved ++;
+			recieved++;
 
 		}
+
+		printf("%s\n", "SALGO");
+		
+		return 1;
 
 		//waitpid(-1, NULL, 0);
 
