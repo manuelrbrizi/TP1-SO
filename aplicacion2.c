@@ -6,8 +6,12 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <sys/wait.h>
-
-
+#include <string.h>
+#include <math.h>
+#include <stdlib.h>
+#include <stdio.h>
+#define BUFFSIZE 256
+#define CHILDQTY 2
 
 int is_regular_file(const char *path)
 {
@@ -16,75 +20,77 @@ int is_regular_file(const char *path)
     return S_ISREG(path_stat.st_mode);
 }
 
-int main( int argc, const char* argv[] ){
-	
-	int sent = 0;
+int get_initial_load(int args){
+	return 1;
+}
+/*
+void create_slave(int filePipe[], int hashPipe[], int argc){
+	//sobre stdin
+	printf("Estoy por crear un esclavo1!\n");
+	close(0);
+	dup(filePipe[0]);
+	close(filePipe[0]);
+	close(filePipe[1]);
+	printf("Estoy por crear un esclavo2!\n");
+	//sobre stdout
+	close(1);
+	dup(hashPipe[1]);
+	close(hashPipe[0]);
+	close(hashPipe[1]);
+	execl("esclavo", "esclavo", get_initial_load(argc));
+}*/
 
-	/*
-	for(int i = 0; i<argc ; i++){
-		if(is_regular_file(argv[i])){
-			printf("File Name:\t\t" );
-		}
-		else{
-			printf("Directory Name:\t\t" );
-		}
-		printf("%s\n",argv[i]);
-
-	}*/
-	
-	char buffer[80];
-
-
+int main(int argc, const char* argv[] ){
+	printf("Recibi esta cantidad de argumentos: %d\n", argc);
+	char buffer[BUFFSIZE];
 	int filePipe[2],hashPipe[2], requestPipe[2];
-
 	pipe(filePipe);
 	pipe(hashPipe);
 	pipe(requestPipe);
 
-	int child_pid;
 
 
-	if((child_pid=fork()) == 0){
-		close(0);
-		dup(filePipe[0]);
-		close(filePipe[0]);
-		close(filePipe[1]);
+	int pid;
 
-		close(1);
-		dup(hashPipe[1]);
-		close(hashPipe[0]);
-		close(hashPipe[1]);
-
-		execl("esclavo", "esclavo", (char *) NULL);
-	}
-	else{
-		close(hashPipe[1]);
-		close(filePipe[0]);
+	for(int i = 0; i < CHILDQTY; i++){
+		if((pid=fork()) == 0){
+			//create_slave(filePipe, hashPipe, argc);
+			close(0);
+			dup(filePipe[0]);
+			close(filePipe[0]);
+			close(filePipe[1]);
 		
+			close(1);
+			dup(hashPipe[1]);
+			close(hashPipe[0]);
+			close(hashPipe[1]);
 
-		while(sent < argc){
-			//write(filePipe[1],"HOLA\0",5);
-			//fprintf(filePipe[1], "HOLA");
-			write(filePipe[1],argv[sent],80);
-			sent++;
+			char * str = malloc(BUFFSIZE);
+			snprintf(str, BUFFSIZE, "%d", get_initial_load(argc));
+			execl("esclavo", "esclavo", str,(char *)NULL);
 		}
+	}
+	
+	//aca tengo que mandarle el nombre de los archivos
 
-		int recieved = 0;
 
-		while(recieved < sent){
-			// /printf("HOLA\n");
-			read(hashPipe[0], buffer, 80);
-			//printf("HOLAA\n");
-			printf("%s\n",buffer );
-			recieved ++;
+	if(pid != 0) {	
+		fprintf(stderr, "Escribi re piola\n");
+		close(hashPipe[1]);
+		close(filePipe[0]);
 
+		for(int i = 1;i<argc;i++){
+			write(filePipe[1], &argv[i], BUFFSIZE);
 		}
-
-		//waitpid(-1, NULL, 0);
-
-
-		//kill(child_pid, SIGKILL);
 	}
 
-	//write(filePipe[1],"HOLA\0",5);
+	
+	int recieved = 0;
+	
+	while(recieved < argc-1){
+		read(hashPipe[0], buffer, BUFFSIZE);
+		printf("%s\n",buffer);
+		recieved ++;
+	}
+	
 }
