@@ -1,0 +1,3 @@
+void time();
+
+void date();
